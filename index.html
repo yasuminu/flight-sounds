@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AirbandJP - 日本の航空管制をリアルタイムで聴く</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Share+Tech+Mono&family=Bebas+Neue&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #060d1a;
+    --surface: #0d1c2e;
+    --surface2: #0f2035;
+    --accent: #00e5ff;
+    --accent2: #ff6b35;
+    --green: #00ff88;
+    --yellow: #ffd600;
+    --text: #c8d8e8;
+    --dim: #4a6a8a;
+    --border: rgba(0,229,255,0.12);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* グリッド背景 */
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(0,229,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none; z-index:0;
+  }
+
+  /* ── ヘッダー ── */
+  header {
+    position: relative; z-index: 10;
+    height: 52px;
+    background: rgba(6,13,26,0.97);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 1.2rem;
+    gap: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .logo {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.5rem;
+    letter-spacing: .1em;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    white-space: nowrap;
+  }
+
+  .live-dot {
+    width: 8px; height: 8px;
+    background: var(--green);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--green);
+    animation: blink 1.2s ease-in-out infinite;
+  }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+  .header-airport {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .8rem;
+    color: var(--accent);
+    background: rgba(0,229,255,0.08);
+    border: 1px solid var(--border);
+    padding: 3px 12px;
+    letter-spacing: .05em;
+  }
+
+  .header-status {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .72rem;
+    color: var(--dim);
+    margin-left: auto;
+    display: flex;
+    gap: 1.5rem;
+  }
+
+  .header-status span { color: var(--text); }
+
+  /* ── メインレイアウト ── */
+  .main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr 300px;
+    grid-template-rows: 1fr;
+    overflow: hidden;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── 左パネル：空港選択 ── */
+  .left-panel {
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .panel-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .65rem;
+    letter-spacing: .2em;
+    color: var(--dim);
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,.2);
+  }
+
+  .airport-list {
+    overflow-y: auto;
+    flex: 1;
+  }
+
+  .airport-item {
+    padding: .9rem 1rem;
+    border-bottom: 1px solid rgba(0,229,255,0.06);
+    cursor: pointer;
+    transition: background .15s;
+    position: relative;
+  }
+
+  .airport-item::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--accent);
+    transform: scaleY(0);
+    transition: transform .2s;
+  }
+
+  .airport-item:hover { background: rgba(0,229,255,0.05); }
+  .airport-item:hover::before { transform: scaleY(1); }
+  .airport-item.active { background: rgba(0,229,255,0.08); }
+  .airport-item.active::before { transform: scaleY(1); }
+
+  .ai-code {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    color: var(--accent);
+    letter-spacing: .05em;
+    line-height: 1;
+  }
+
+  .ai-name { font-size: .82rem; color: #fff; font-weight: 500; }
+  .ai-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .65rem;
+    color: var(--dim);
+    margin-top: .15rem;
+  }
+
+  .ai-badge {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .6rem;
+    padding: 1px 6px;
+    border-radius: 1px;
+    margin-top: .3rem;
+  }
+
+  .badge-live { background: rgba(0,255,136,.15); color: var(--green); border: 1px solid rgba(0,255,136,.3); }
+  .badge-soon { background: rgba(90,122,154,.1); color: var(--dim); border: 1px solid rgba(90,122,154,.2); }
+
+  /* フィードセレクター */
+  .feed-selector {
+    padding: .5rem;
+    border-top: 1px solid var(--border);
+    background: rgba(0,0,0,.3);
+  }
+
+  .feed-btn {
+    display: block;
+    width: 100%;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .68rem;
+    padding: .4rem .6rem;
+    margin-bottom: .3rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--dim);
+    cursor: pointer;
+    text-align: left;
+    transition: all .15s;
+    letter-spacing: .03em;
+  }
+
+  .feed-btn:hover, .feed-btn.active {
+    background: rgba(0,229,255,0.08);
+    border-color: var(--accent);
+    color: var(--accent);
+  }
+
+  /* ── 中央：マップ＋プレイヤー ── */
+  .center-panel {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* マップ */
+  .map-area {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+    background: #08111f;
+  }
+
+  .map-area iframe {
+    width: 100%; height: 100%;
+    border: none;
+    opacity: .9;
+  }
+
+  .map-overlay {
+    position: absolute;
+    top: .8rem; left: .8rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .65rem;
+    color: var(--accent);
+    background: rgba(6,13,26,.85);
+    border: 1px solid var(--border);
+    padding: .4rem .8rem;
+    letter-spacing: .1em;
+    pointer-events: none;
+  }
+
+  /* プレイヤーバー */
+  .player-bar {
+    height: 80px;
+    background: var(--surface2);
+    border-top: 1px solid var(--accent);
+    display: flex;
+    align-items: center;
+    padding: 0 1.5rem;
+    gap: 1.5rem;
+    flex-shrink: 0;
+    position: relative;
+  }
+
+  .player-bar::before {
+    content: 'NOW ON AIR';
+    position: absolute;
+    top: -10px; left: 16px;
+    background: var(--accent);
+    color: var(--bg);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .6rem;
+    padding: 1px 8px;
+    letter-spacing: .12em;
+  }
+
+  .player-info { flex: 1; }
+
+  .player-name {
+    font-family: 'Bebas Neue', sans-serif;
+    font-size: 1.3rem;
+    letter-spacing: .05em;
+    color: #fff;
+    line-height: 1;
+  }
+
+  .player-freq {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .68rem;
+    color: var(--dim);
+    margin-top: .15rem;
+  }
+
+  /* 波形 */
+  .waveform {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 28px;
+  }
+
+  .wbar {
+    width: 3px;
+    background: var(--accent);
+    border-radius: 1px;
+    animation: wave 1s ease-in-out infinite;
+    opacity: 0;
+    transition: opacity .3s;
+  }
+
+  .wbar.playing { opacity: 1; }
+
+  .wbar:nth-child(1){animation-delay:0s;height:30%}
+  .wbar:nth-child(2){animation-delay:.08s;height:65%}
+  .wbar:nth-child(3){animation-delay:.16s;height:100%}
+  .wbar:nth-child(4){animation-delay:.24s;height:55%}
+  .wbar:nth-child(5){animation-delay:.32s;height:80%}
+  .wbar:nth-child(6){animation-delay:.16s;height:45%}
+  .wbar:nth-child(7){animation-delay:.08s;height:90%}
+  .wbar:nth-child(8){animation-delay:.04s;height:35%}
+
+  @keyframes wave {
+    0%,100%{transform:scaleY(.3)}
+    50%{transform:scaleY(1)}
+  }
+
+  .btn-play {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform .15s, box-shadow .15s;
+    flex-shrink: 0;
+  }
+
+  .btn-play:hover {
+    transform: scale(1.08);
+    box-shadow: 0 0 20px rgba(0,229,255,.5);
+  }
+
+  .btn-play svg { fill: var(--bg); }
+
+  audio { display: none; }
+
+  /* エラーメッセージ */
+  .stream-error {
+    display: none;
+    position: fixed;
+    bottom: 1rem; left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255,107,53,0.95);
+    color: #fff;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .75rem;
+    padding: .6rem 1.4rem;
+    border-radius: 2px;
+    z-index: 999;
+    letter-spacing: .05em;
+  }
+  .stream-error.visible { display: block; }
+
+  /* 字幕エリア */
+  .subtitle-bar {
+    height: 38px;
+    background: rgba(0,0,0,.4);
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 1rem;
+    gap: 1rem;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .subtitle-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .6rem;
+    color: var(--dim);
+    letter-spacing: .1em;
+    white-space: nowrap;
+  }
+
+  .subtitle-text {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .78rem;
+    color: var(--yellow);
+    flex: 1;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+
+  /* ── 右パネル：用語ハイライト ── */
+  .right-panel {
+    border-left: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .terms-header {
+    padding: .7rem 1rem;
+    border-bottom: 1px solid var(--border);
+    background: rgba(0,0,0,.2);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .terms-header-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .65rem;
+    letter-spacing: .2em;
+    color: var(--dim);
+  }
+
+  .detected-badge {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .6rem;
+    padding: 2px 8px;
+    background: rgba(255,214,0,.1);
+    border: 1px solid rgba(255,214,0,.3);
+    color: var(--yellow);
+    letter-spacing: .05em;
+  }
+
+  /* 検出中のフラッシュ用語 */
+  .detected-term {
+    margin: .8rem;
+    padding: 1rem;
+    border: 1px solid var(--yellow);
+    background: rgba(255,214,0,.06);
+    border-radius: 2px;
+    animation: fadeIn .3s ease;
+    display: none;
+  }
+
+  .detected-term.visible { display: block; }
+
+  .dt-en {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1rem;
+    color: var(--yellow);
+    letter-spacing: .05em;
+  }
+
+  .dt-ja {
+    font-size: 1.1rem;
+    color: #fff;
+    font-weight: 700;
+    margin: .3rem 0;
+  }
+
+  .dt-desc { font-size: .75rem; color: var(--text); line-height: 1.6; }
+
+  @keyframes fadeIn { from{opacity:0;transform:translateY(-6px)} to{opacity:1;transform:translateY(0)} }
+
+  /* 用語リスト */
+  .terms-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding: .5rem;
+  }
+
+  .term-card {
+    padding: .7rem .8rem;
+    margin-bottom: .4rem;
+    border: 1px solid var(--border);
+    background: rgba(0,0,0,.2);
+    cursor: pointer;
+    transition: all .2s;
+    position: relative;
+  }
+
+  .term-card::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255,214,0,.08);
+    opacity: 0;
+    transition: opacity .3s;
+  }
+
+  .term-card.highlight::after { opacity: 1; }
+  .term-card.highlight { border-color: var(--yellow); }
+
+  .tc-en {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .75rem;
+    color: var(--accent2);
+    margin-bottom: .15rem;
+  }
+
+  .tc-ja { font-size: .82rem; color: #fff; font-weight: 500; }
+  .tc-desc { font-size: .7rem; color: var(--dim); margin-top: .15rem; line-height: 1.5; }
+
+  /* カテゴリタブ */
+  .cat-tabs {
+    display: flex;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .cat-tab {
+    flex: 1;
+    padding: .5rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .62rem;
+    letter-spacing: .05em;
+    color: var(--dim);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    transition: all .15s;
+  }
+
+  .cat-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .cat-tab:hover { color: var(--text); }
+
+  /* スクロールバー */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* レスポンシブ */
+  @media (max-width: 768px) {
+    .main { grid-template-columns: 1fr; grid-template-rows: auto 1fr auto; }
+    .left-panel { display: none; }
+    .right-panel { max-height: 40vh; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ヘッダー -->
+<header>
+  <div class="logo">
+    <div class="live-dot"></div>
+    AIRBAND<span style="color:#fff">JP</span>
+  </div>
+  <div class="header-airport" id="headerAirport">RJTT · 羽田空港</div>
+  <div class="header-status">
+    <div>JST <span id="clock">--:--:--</span></div>
+    <div>LISTENERS <span id="listeners">1,284</span></div>
+    <div>FEEDS <span style="color:var(--green)">LIVE</span></div>
+  </div>
+</header>
+
+<!-- メイン -->
+<div class="main">
+
+  <!-- 左：空港リスト -->
+  <div class="left-panel">
+    <div class="panel-title">▶ AIRPORTS / FEEDS</div>
+    <div class="airport-list">
+
+      <div class="airport-item active" onclick="selectAirport(this,'RJTT','羽田空港','Tower 118.100 / App 119.100 MHz')">
+        <div class="ai-code">RJTT</div>
+        <div class="ai-name">羽田空港</div>
+        <div class="ai-sub">Tokyo International / Haneda</div>
+        <div class="ai-badge badge-live">● LIVE · 5フィード</div>
+      </div>
+
+      <div class="airport-item" onclick="selectAirport(this,'RJAA','成田国際空港','App 124.400 / Dep 132.100 MHz')">
+        <div class="ai-code">RJAA</div>
+        <div class="ai-name">成田国際空港</div>
+        <div class="ai-sub">Narita International Airport</div>
+        <div class="ai-badge badge-live">● LIVE · 6フィード</div>
+      </div>
+
+      <div class="airport-item" onclick="selectAirport(this,'RJOO','大阪国際空港（伊丹）','Tower 118.900 / App 119.725 MHz')">
+        <div class="ai-code">RJOO</div>
+        <div class="ai-name">大阪国際空港（伊丹）</div>
+        <div class="ai-sub">Osaka International / Itami</div>
+        <div class="ai-badge badge-live">● LIVE · 2フィード</div>
+      </div>
+
+      <div class="airport-item" onclick="selectAirport(this,'RJSF','福島空港','Tower 118.100 MHz')">
+        <div class="ai-code">RJSF</div>
+        <div class="ai-name">福島空港</div>
+        <div class="ai-sub">Fukushima Airport</div>
+        <div class="ai-badge badge-live">● LIVE · 1フィード</div>
+      </div>
+
+      <div class="airport-item" onclick="selectAirport(this,'RJTY','横田基地','Tower 126.200 MHz')">
+        <div class="ai-code">RJTY</div>
+        <div class="ai-name">横田基地（米軍）</div>
+        <div class="ai-sub">Yokota Air Base</div>
+        <div class="ai-badge badge-live">● LIVE</div>
+      </div>
+
+      <div class="airport-item" onclick="selectAirport(this,'ROAH','那覇空港','Tower 118.100 MHz')">
+        <div class="ai-code">ROAH</div>
+        <div class="ai-name">那覇空港</div>
+        <div class="ai-sub">Naha Airport</div>
+        <div class="ai-badge badge-live">● LIVE</div>
+      </div>
+
+      <div class="airport-item" style="opacity:.4;pointer-events:none">
+        <div class="ai-code">RJCC</div>
+        <div class="ai-name">新千歳空港</div>
+        <div class="ai-sub">New Chitose Airport</div>
+        <div class="ai-badge badge-soon">○ 準備中</div>
+      </div>
+
+      <div class="airport-item" style="opacity:.4;pointer-events:none">
+        <div class="ai-code">RJFF</div>
+        <div class="ai-name">福岡空港</div>
+        <div class="ai-sub">Fukuoka Airport</div>
+        <div class="ai-badge badge-soon">○ 準備中</div>
+      </div>
+
+      <div class="airport-item" style="opacity:.4;pointer-events:none">
+        <div class="ai-code">RJGG</div>
+        <div class="ai-name">中部国際空港</div>
+        <div class="ai-sub">Chubu Centrair Airport</div>
+        <div class="ai-badge badge-soon">○ 準備中</div>
+      </div>
+
+    </div>
+
+    <!-- フィード選択 -->
+    <div class="feed-selector">
+      <div style="font-family:'Share Tech Mono',monospace;font-size:.6rem;color:var(--dim);margin-bottom:.4rem;letter-spacing:.1em">SELECT FEED</div>
+      <button class="feed-btn active" onclick="selectFeed(this,'Approach / Departure','rjtt_app')">▶ Approach / Departure</button>
+      <button class="feed-btn" onclick="selectFeed(this,'Tower / Ground / TCA','rjtt_twr')">▶ Tower / Ground / TCA</button>
+      <button class="feed-btn" onclick="selectFeed(this,'Tokyo Control','rjtt_control')">▶ Tokyo Control</button>
+      <button class="feed-btn" onclick="selectFeed(this,'Company Channels','rjtt2')">▶ Company Channels</button>
+    </div>
+  </div>
+
+  <!-- 中央：マップ＋プレイヤー -->
+  <div class="center-panel">
+
+    <!-- FlightRadar24マップ -->
+    <div class="map-area">
+      <iframe
+        src="https://www.flightradar24.com/simple_map#35.55,139.78/9"
+        allowfullscreen>
+      </iframe>
+      <div class="map-overlay">▶ FLIGHTRADAR24 · REALTIME</div>
+    </div>
+
+    <!-- プレイヤーバー -->
+    <div class="player-bar">
+      <div class="player-info">
+        <div class="player-name" id="playerName">羽田空港 — Approach / Departure</div>
+        <div class="player-freq" id="playerFreq">RJTT · 119.100 / 120.500 MHz · LiveATC.net</div>
+      </div>
+      <div class="waveform" id="waveform">
+        <div class="wbar"></div><div class="wbar"></div><div class="wbar"></div>
+        <div class="wbar"></div><div class="wbar"></div><div class="wbar"></div>
+        <div class="wbar"></div><div class="wbar"></div>
+      </div>
+      <button class="btn-play" id="playBtn" onclick="togglePlay()">
+        <svg width="20" height="20" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+      </button>
+      <audio id="audioPlayer" preload="none" crossorigin="anonymous"></audio>
+    </div>
+
+    <div class="stream-error" id="streamError">
+      ⚠ ストリームに接続できません。別のフィードをお試しください。
+    </div>
+
+    <!-- 字幕バー -->
+    <div class="subtitle-bar">
+      <div class="subtitle-label">◈ DETECTED</div>
+      <div class="subtitle-text" id="subtitleText">— 音声を再生すると、管制用語を自動でハイライト表示します —</div>
+    </div>
+
+  </div>
+
+  <!-- 右：用語パネル -->
+  <div class="right-panel">
+
+    <!-- 検出中の用語（フラッシュ表示） -->
+    <div class="detected-term" id="detectedTerm">
+      <div class="dt-en" id="dtEn">Cleared for takeoff</div>
+      <div class="dt-ja" id="dtJa">🛫 離陸許可</div>
+      <div class="dt-desc" id="dtDesc">管制官がパイロットに滑走路からの離陸を許可する指示。この言葉が聞こえたら飛行機が動き出す瞬間です。</div>
+    </div>
+
+    <!-- カテゴリタブ -->
+    <div class="cat-tabs">
+      <button class="cat-tab active" onclick="switchCat(this,'all')">すべて</button>
+      <button class="cat-tab" onclick="switchCat(this,'takeoff')">離着陸</button>
+      <button class="cat-tab" onclick="switchCat(this,'ground')">地上</button>
+      <button class="cat-tab" onclick="switchCat(this,'basic')">基本</button>
+    </div>
+
+    <div style="font-family:'Share Tech Mono',monospace;font-size:.62rem;color:var(--dim);padding:.5rem .8rem;letter-spacing:.1em;border-bottom:1px solid var(--border)">
+      ▶ ATC PHRASE GUIDE · クリックで詳細
+    </div>
+
+    <!-- 用語リスト -->
+    <div class="terms-scroll" id="termsList">
+    </div>
+
+  </div>
+</div>
+
+<script>
+// ── 用語データベース ──
+const terms = [
+  // 離着陸
+  { en:'Cleared for takeoff', ja:'🛫 離陸許可', desc:'滑走路からの離陸を許可する指示。この言葉の直後に飛行機が加速します。', cat:'takeoff', key:['cleared for takeoff','takeoff'] },
+  { en:'Cleared to land', ja:'🛬 着陸許可', desc:'着陸滑走路への進入・着陸を許可する指示。ファイナルアプローチ中に発令されます。', cat:'takeoff', key:['cleared to land','land'] },
+  { en:'Go around', ja:'⚠️ 着陸やり直し', desc:'着陸を中止して上昇するよう指示。天候・先行機・誘導路混雑などで発令される重要指示。', cat:'takeoff', key:['go around','go-around'] },
+  { en:'Line up and wait', ja:'⏸ 滑走路上で待機', desc:'滑走路に進入して待機するよう指示。離陸許可ではないので注意。以前は「Position and hold」と言っていました。', cat:'takeoff', key:['line up','position and hold'] },
+  { en:'Rotate', ja:'🔺 機首上げ', desc:'離陸滑走中に機首を上げるタイミングを示す言葉。速度が離陸速度（Vr）に達した合図。', cat:'takeoff', key:['rotate'] },
+  // 地上
+  { en:'Pushback approved', ja:'🔙 プッシュバック許可', desc:'ゲートから後退（プッシュバック）することを許可する指示。エンジン始動前に行われます。', cat:'ground', key:['pushback','push back'] },
+  { en:'Taxi to runway', ja:'🚕 滑走路へ地上走行', desc:'指定された滑走路まで地上走行するよう指示。経路が複雑な大空港では詳細な誘導があります。', cat:'ground', key:['taxi to','taxi via'] },
+  { en:'Hold short', ja:'🛑 手前で停止待機', desc:'指定されたポイントの手前で停止して待機するよう指示。滑走路への進入を防ぐ重要な指示。', cat:'ground', key:['hold short'] },
+  { en:'Cross runway', ja:'✈ 滑走路横断許可', desc:'指定された滑走路を横断することを許可する指示。必ず管制許可が必要です。', cat:'ground', key:['cross runway','cross'] },
+  // 基本
+  { en:'Roger', ja:'✅ 了解（受信確認）', desc:'指示内容を受信・理解したことを伝える。「Yes」ではなく「受け取った」の意味。実行を約束するものではありません。', cat:'basic', key:['roger'] },
+  { en:'Wilco', ja:'✅ 了解・実行します', desc:'Will comply（従います）の略。Rogerより強く、指示を実行する意志を含みます。', cat:'basic', key:['wilco'] },
+  { en:'Affirm', ja:'◯ はい・肯定', desc:'「Yes」に相当する航空無線用語。「Affirmative」の短縮形。「Yeah」や「Yes」は使いません。', cat:'basic', key:['affirm'] },
+  { en:'Negative', ja:'✕ いいえ・否定', desc:'「No」に相当する航空無線用語。明確に否定する場合に使用します。', cat:'basic', key:['negative'] },
+  { en:'Say again', ja:'🔁 もう一度言ってください', desc:'聞き取れなかった場合に再送信を求める言葉。「Repeat」は爆発物の再投下を意味するため使用禁止。', cat:'basic', key:['say again'] },
+  { en:'Standby', ja:'⏳ 少し待ってください', desc:'管制官が忙しい時や確認中に使用する言葉。返答は後ほど来ます。', cat:'basic', key:['standby','stand by'] },
+  { en:'Squawk XXXX', ja:'📡 トランスポンダ設定', desc:'レーダー識別用コード（スコーク）を設定する指示。7700=緊急、7600=通信不能、7500=ハイジャック。', cat:'basic', key:['squawk'] },
+  { en:'Contact', ja:'📻 周波数を変更してください', desc:'別の管制機関または周波数に切り替えるよう指示。次の管制官への引き渡しです。', cat:'basic', key:['contact'] },
+  { en:'Mayday Mayday Mayday', ja:'🆘 緊急事態宣言', desc:'生命・航空機に関わる重大な緊急事態を宣言する言葉。3回繰り返します。最も重要な航空無線用語。', cat:'basic', key:['mayday'] },
+  { en:'Pan-Pan Pan-Pan Pan-Pan', ja:'⚠️ 緊急事態（重大）', desc:'Maydayの一段階下の緊急事態。緊急ではあるが即時の危険はない状態。これも3回繰り返します。', cat:'basic', key:['pan-pan','pan pan'] },
+];
+
+// ── ストリームURL（Netlifyプロキシ経由） ──
+// netlify.toml の設定により /stream/* が d.liveatc.net/* に中継される
+const streamUrls = {
+  // 羽田
+  rjtt_app:     '/stream/rjtt_app',
+  rjtt_twr:     '/stream/rjtt_twr',
+  rjtt_control: '/stream/rjtt_control',
+  rjtt2:        '/stream/rjtt2',
+  rjtt_gnd:     '/stream/rjtt_gnd',
+  // 成田
+  rjaa_app_s:   '/stream/rjaa_app_s',
+  rjaa_dep1:    '/stream/rjaa_dep1',
+  rjaa_gnd1:    '/stream/rjaa_gnd1',
+  rjaa_radar:   '/stream/rjaa_radar',
+  rjaa_co:      '/stream/rjaa_co',
+  // 伊丹
+  rjoo:         '/stream/rjoo',
+  // 福島
+  rjsf:         '/stream/rjsf',
+  // 横田
+  rjty:         '/stream/rjty',
+  // 那覇
+  roah:         '/stream/roah',
+};
+let playing = false;
+let currentAirport = 'RJTT';
+let currentFeed = 'rjtt_app';
+let currentCat = 'all';
+let demoInterval = null;
+
+// ── 用語レンダリング ──
+function renderTerms(cat) {
+  const list = document.getElementById('termsList');
+  const filtered = cat === 'all' ? terms : terms.filter(t => t.cat === cat);
+  list.innerHTML = filtered.map((t, i) => `
+    <div class="term-card" id="tc_${i}" onclick="showTerm(${terms.indexOf(t)})">
+      <div class="tc-en">${t.en}</div>
+      <div class="tc-ja">${t.ja}</div>
+      <div class="tc-desc">${t.desc.substring(0,40)}…</div>
+    </div>
+  `).join('');
+}
+
+function switchCat(btn, cat) {
+  document.querySelectorAll('.cat-tab').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentCat = cat;
+  renderTerms(cat);
+}
+
+// ── 用語詳細表示 ──
+function showTerm(idx) {
+  const t = terms[idx];
+  document.getElementById('dtEn').textContent = t.en;
+  document.getElementById('dtJa').textContent = t.ja;
+  document.getElementById('dtDesc').textContent = t.desc;
+  const box = document.getElementById('detectedTerm');
+  box.classList.remove('visible');
+  setTimeout(() => box.classList.add('visible'), 10);
+  document.getElementById('subtitleText').textContent = `${t.en}  →  ${t.ja}`;
+}
+
+// ── 空港選択 ──
+const feeds = {
+  RJTT: [
+    { label:'Approach / Departure', mount:'rjtt_app' },
+    { label:'Tower / Ground / TCA', mount:'rjtt_twr' },
+    { label:'Tokyo Control', mount:'rjtt_control' },
+    { label:'Company Channels', mount:'rjtt2' },
+  ],
+  RJAA: [
+    { label:'Approach（南方）', mount:'rjaa_app_s' },
+    { label:'Departure #1', mount:'rjaa_dep1' },
+    { label:'Ground #1', mount:'rjaa_gnd1' },
+    { label:'Radar まとめ', mount:'rjaa_radar' },
+    { label:'Company Channels', mount:'rjaa_co' },
+  ],
+  RJOO: [
+    { label:'Tower / Approach', mount:'rjoo' },
+  ],
+  RJSF: [
+    { label:'Tower / Approach', mount:'rjsf' },
+  ],
+  RJTY: [
+    { label:'Tower / Approach', mount:'rjty' },
+  ],
+  ROAH: [
+    { label:'Tower / Approach', mount:'roah' },
+  ],
+};
+
+function selectAirport(el, code, name, freq) {
+  document.querySelectorAll('.airport-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  currentAirport = code;
+  document.getElementById('headerAirport').textContent = `${code} · ${name}`;
+  document.getElementById('playerName').textContent = `${name} — ${feeds[code][0].label}`;
+  document.getElementById('playerFreq').textContent = `${code} · ${freq} · LiveATC.net`;
+
+  // フィードボタン更新
+  const fs = feeds[code] || [];
+  const selector = document.querySelector('.feed-selector');
+  const btns = selector.querySelectorAll('.feed-btn');
+  btns.forEach(b => b.remove());
+  const label = selector.querySelector('div');
+  fs.forEach((f, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'feed-btn' + (i===0?' active':'');
+    btn.textContent = `▶ ${f.label}`;
+    btn.onclick = () => selectFeed(btn, f.label, f.mount);
+    selector.appendChild(btn);
+  });
+
+  currentFeed = fs[0].mount;
+  stopPlay();
+}
+
+function selectFeed(btn, label, mount) {
+  document.querySelectorAll('.feed-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentFeed = mount;
+  const name = document.getElementById('playerName').textContent.split('—')[0].trim();
+  document.getElementById('playerName').textContent = `${name} — ${label}`;
+  stopPlay();
+}
+
+// ── 再生 ──
+function togglePlay() {
+  if (playing) stopPlay(); else startPlay();
+}
+
+function startPlay() {
+  playing = true;
+  const btn = document.getElementById('playBtn');
+  btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="#060d1a"><rect x="6" y="5" width="4" height="14"/><rect x="14" y="5" width="4" height="14"/></svg>';
+  document.querySelectorAll('.wbar').forEach(b => b.classList.add('playing'));
+  document.getElementById('streamError').classList.remove('visible');
+
+  const audio = document.getElementById('audioPlayer');
+  const url = streamUrls[currentFeed];
+
+  if (!url) {
+    showError('このフィードのURLが見つかりません。');
+    stopPlay();
+    return;
+  }
+
+  // 直接MP3ストリームをセット
+  audio.src = url;
+  audio.volume = 1.0;
+
+  const playPromise = audio.play();
+
+  if (playPromise !== undefined) {
+    playPromise
+      .then(() => {
+        // 再生成功
+        document.getElementById('subtitleText').textContent = '🔊 受信中 — 管制用語が検出されるとハイライト表示されます';
+        startDemoHighlight();
+      })
+      .catch(err => {
+        // CORS等でブロックされた場合のフォールバック
+        console.warn('直接再生失敗:', err);
+        showError('ブラウザのCORS制限により直接再生できません。LiveATCページを開いて聴いてください。');
+        // フォールバック：LiveATCページを新タブで開く
+        setTimeout(() => {
+          window.open(`https://www.liveatc.net/hlisten.php?mount=${currentFeed}&icao=${currentAirport}`, '_blank');
+        }, 1500);
+        stopPlay();
+      });
+  }
+
+  // エラーイベント
+  audio.onerror = () => {
+    showError('ストリームに接続できません。フィードがオフラインの可能性があります。');
+    stopPlay();
+  };
+
+  startDemoHighlight();
+}
+
+function showError(msg) {
+  const el = document.getElementById('streamError');
+  el.textContent = '⚠ ' + msg;
+  el.classList.add('visible');
+  setTimeout(() => el.classList.remove('visible'), 5000);
+}
+
+function stopPlay() {
+  playing = false;
+  const btn = document.getElementById('playBtn');
+  btn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="#060d1a"><path d="M8 5v14l11-7z"/></svg>';
+  document.querySelectorAll('.wbar').forEach(b => b.classList.remove('playing'));
+  const audio = document.getElementById('audioPlayer');
+  audio.pause();
+  audio.src = '';
+  clearInterval(demoInterval);
+  document.getElementById('subtitleText').textContent = '— 音声を再生すると、管制用語を自動でハイライト表示します —';
+}
+
+// ── デモ用ハイライト（再生中にランダムで用語を表示） ──
+function startDemoHighlight() {
+  clearInterval(demoInterval);
+  demoInterval = setInterval(() => {
+    if (!playing) return;
+    const idx = Math.floor(Math.random() * terms.length);
+    showTerm(idx);
+    // カード点滅
+    document.querySelectorAll('.term-card').forEach(c => c.classList.remove('highlight'));
+    const allCards = document.querySelectorAll('.term-card');
+    // 対応カードを探してハイライト
+    const filtered = currentCat === 'all' ? terms : terms.filter(t => t.cat === currentCat);
+    const cardIdx = filtered.indexOf(terms[idx]);
+    if (cardIdx >= 0 && allCards[cardIdx]) {
+      allCards[cardIdx].classList.add('highlight');
+      allCards[cardIdx].scrollIntoView({ behavior:'smooth', block:'nearest' });
+      setTimeout(() => allCards[cardIdx].classList.remove('highlight'), 2500);
+    }
+    document.getElementById('subtitleText').textContent =
+      `🔊 "${terms[idx].en}"  →  ${terms[idx].ja}`;
+  }, 4000);
+}
+
+// ── 時計 ──
+function updateClock() {
+  const now = new Date();
+  const jst = new Date(now.getTime() + 9*60*60*1000);
+  document.getElementById('clock').textContent = jst.toISOString().substr(11,8);
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// リスナー数演出
+setInterval(() => {
+  const base = 1284;
+  document.getElementById('listeners').textContent = (base + Math.floor(Math.random()*60)-30).toLocaleString();
+}, 6000);
+
+// 初期レンダリング
+renderTerms('all');
+</script>
+</body>
+</html>

@@ -1,0 +1,83 @@
+[[redirects]]
+  from = "/stream/rjtt_app"
+  to = "https://d.liveatc.net/rjtt_app"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjtt_twr"
+  to = "https://d.liveatc.net/rjtt_twr"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjtt_control"
+  to = "https://d.liveatc.net/rjtt_control"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjtt2"
+  to = "https://d.liveatc.net/rjtt2"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjtt_gnd"
+  to = "https://d.liveatc.net/rjtt_gnd"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjaa_app_s"
+  to = "https://d.liveatc.net/rjaa_app_s"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjaa_dep1"
+  to = "https://d.liveatc.net/rjaa_dep1"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjaa_gnd1"
+  to = "https://d.liveatc.net/rjaa_gnd1"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjaa_radar"
+  to = "https://d.liveatc.net/rjaa_radar"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjaa_co"
+  to = "https://d.liveatc.net/rjaa_co"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjoo"
+  to = "https://d.liveatc.net/rjoo"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjsf"
+  to = "https://d.liveatc.net/rjsf"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/rjty"
+  to = "https://d.liveatc.net/rjty"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/stream/roah"
+  to = "https://d.liveatc.net/roah"
+  status = 200
+  force = true
