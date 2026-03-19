@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>大阪アジ釣りスポットガイド</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #071a0e;
+    --surface: #0d2418;
+    --surface2: #0f2e1a;
+    --accent: #00e587;
+    --accent2: #ffd600;
+    --blue: #00c8ff;
+    --text: #c0d8c8;
+    --dim: #3a6a50;
+    --border: rgba(0,229,135,0.12);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Noto Sans JP', sans-serif;
+    min-height: 100vh;
+  }
+  body::before {
+    content:'';
+    position:fixed; inset:0;
+    background-image:
+      linear-gradient(rgba(0,229,135,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,135,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events:none; z-index:0;
+  }
+  header {
+    position: relative; z-index: 10;
+    height: 56px;
+    background: rgba(7,26,14,0.97);
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    padding: 0 1.4rem;
+    gap: 1rem;
+  }
+  .logo {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 1.2rem;
+    letter-spacing: .08em;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+  .logo-fish { font-size: 1.4rem; }
+  .header-sub {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .7rem;
+    color: var(--dim);
+  }
+  .season-badge {
+    margin-left: auto;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .65rem;
+    color: var(--accent2);
+    background: rgba(255,214,0,.1);
+    border: 1px solid rgba(255,214,0,.25);
+    padding: .2rem .7rem;
+  }
+  .main {
+    position: relative; z-index: 1;
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 1.5rem 1.2rem;
+  }
+  .section-title {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .65rem;
+    letter-spacing: .2em;
+    color: var(--dim);
+    margin-bottom: 1rem;
+    padding-bottom: .4rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .spots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+  .spot-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 1.1rem;
+    position: relative;
+    transition: border-color .2s;
+  }
+  .spot-card:hover { border-color: var(--accent); }
+  .spot-rank {
+    position: absolute;
+    top: .8rem; right: .8rem;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .58rem;
+    color: var(--dim);
+  }
+  .spot-name {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: .15rem;
+  }
+  .spot-area {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .65rem;
+    color: var(--accent);
+    margin-bottom: .7rem;
+  }
+  .spot-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .3rem;
+    margin-bottom: .7rem;
+  }
+  .tag {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .58rem;
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+  .tag-easy   { background: rgba(0,229,135,.1); color: var(--accent); border: 1px solid rgba(0,229,135,.2); }
+  .tag-hard   { background: rgba(255,107,53,.1); color: #ff6b35; border: 1px solid rgba(255,107,53,.2); }
+  .tag-night  { background: rgba(0,200,255,.1); color: var(--blue); border: 1px solid rgba(0,200,255,.2); }
+  .tag-family { background: rgba(255,214,0,.1); color: var(--accent2); border: 1px solid rgba(255,214,0,.2); }
+  .tag-boat   { background: rgba(180,100,255,.1); color: #b464ff; border: 1px solid rgba(180,100,255,.2); }
+  .spot-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .4rem;
+    margin-bottom: .7rem;
+  }
+  .info-item {
+    font-size: .72rem;
+  }
+  .info-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .58rem;
+    color: var(--dim);
+    margin-bottom: .1rem;
+  }
+  .info-val { color: #fff; }
+  .spot-desc {
+    font-size: .74rem;
+    color: var(--text);
+    line-height: 1.65;
+    border-top: 1px solid var(--border);
+    padding-top: .6rem;
+  }
+  .rating {
+    display: flex;
+    gap: 2px;
+    margin-top: .3rem;
+  }
+  .star { color: var(--accent2); font-size: .85rem; }
+  .star.dim { color: var(--dim); }
+
+  .tips-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: .8rem;
+    margin-bottom: 2rem;
+  }
+  .tip-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: .9rem;
+  }
+  .tip-icon { font-size: 1.4rem; margin-bottom: .4rem; }
+  .tip-title {
+    font-size: .88rem;
+    font-weight: 700;
+    color: #fff;
+    margin-bottom: .3rem;
+  }
+  .tip-body {
+    font-size: .72rem;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .tip-body strong { color: var(--accent); }
+
+  .season-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 2rem;
+    font-size: .78rem;
+  }
+  .season-table th, .season-table td {
+    padding: .55rem .8rem;
+    border: 1px solid var(--border);
+    text-align: left;
+  }
+  .season-table th {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .6rem;
+    letter-spacing: .1em;
+    color: var(--dim);
+    background: rgba(0,0,0,.2);
+  }
+  .season-table td { color: var(--text); }
+  .season-table tr:hover td { background: rgba(0,229,135,.03); }
+  .peak { color: var(--accent); font-weight: 700; }
+  .good { color: var(--accent2); }
+
+  footer {
+    position: relative; z-index: 1;
+    text-align: center;
+    padding: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: .62rem;
+    color: var(--dim);
+  }
+
+  @media(max-width:600px){
+    .spots-grid { grid-template-columns: 1fr; }
+    .tips-grid { grid-template-columns: 1fr; }
+    .spot-info { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <span class="logo-fish">🐟</span>
+    大阪アジ釣りスポットガイド
+  </div>
+  <div class="header-sub">OSAKA AJI FISHING GUIDE</div>
+  <div class="season-badge">▶ 旬：4〜6月 / 9〜11月</div>
+</header>
+
+<div class="main">
+
+  <!-- スポット一覧 -->
+  <div class="section-title">▶ RECOMMENDED SPOTS — 大阪のアジ釣りスポット</div>
+  <div class="spots-grid">
+
+    <div class="spot-card">
+      <div class="spot-rank">#01</div>
+      <div class="spot-name">大阪南港 魚つり園護岸</div>
+      <div class="spot-area">NANKO · 住之江区</div>
+      <div class="spot-tags">
+        <span class="tag tag-easy">入門向け</span>
+        <span class="tag tag-family">ファミリー</span>
+        <span class="tag tag-night">夜釣り◎</span>
+      </div>
+      <div class="spot-info">
+        <div class="info-item">
+          <div class="info-label">ACCESS</div>
+          <div class="info-val">ニュートラム 中ふ頭駅 徒歩5分</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">OPEN</div>
+          <div class="info-val">6:00〜22:00（年中無休）</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">FEE</div>
+          <div class="info-val">大人700円・子供350円</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">DEPTH</div>
+          <div class="info-val">3〜8m</div>
+        </div>
+      </div>
+      <div class="rating">
+        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span>
+      </div>
+      <div class="spot-desc">
+        大阪市内最大級の海釣り公園。足場が良くトイレ・売店完備でファミリーにも最適。夕方以降はサビキ釣りでアジが入れ食いになることも多い。春秋がピークシーズン。
+      </div>
+    </div>
+
+    <div class="spot-card">
+      <div class="spot-rank">#02</div>
+      <div class="spot-name">岸和田一文字</div>
+      <div class="spot-area">KISHIWADA · 岸和田市</div>
+      <div class="spot-tags">
+        <span class="tag tag-boat">渡船必要</span>
+        <span class="tag tag-night">夜釣り◎</span>
+      </div>
+      <div class="spot-info">
+        <div class="info-item">
+          <div class="info-label">ACCESS</div>
+          <div class="info-val">JR 東岸和田駅 車10分（渡船場）</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">BOAT</div>
+          <div class="info-val">渡船代 往復約1,500円</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">DEPTH</div>
+          <div class="info-val">5〜15m</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">BEST TIME</div>
+          <div class="info-val">夕マズメ〜深夜</div>
+        </div>
+      </div>
+      <div class="rating">
+        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star dim">★</span>
+      </div>
+      <div class="spot-desc">
+        渡船で渡る沖堤防。水深があり大型アジ（30cm超）の実績が高い。夜は常夜灯周りのアジングも人気。潮通しが良く数・型ともに狙える大阪屈指のスポット。
+      </div>
+    </div>
+
+    <div class="spot-card">
+      <div class="spot-rank">#03</div>
+      <div class="spot-name">泉大津人工島（なぎさ公園）</div>
+      <div class="spot-area">IZUMIOTSU · 泉大津市</div>
+      <div class="spot-tags">
+        <span class="tag tag-easy">入門向け</span>
+        <span class="tag tag-family">ファミリー</span>
+      </div>
+      <div class="spot-info">
+        <div class="info-item">
+          <div class="info-label">ACCESS</div>
+          <div class="info-val">南海 泉大津駅 バス15分</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">FEE</div>
+          <div class="info-val">無料</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">DEPTH</div>
+          <div class="info-val">2〜6m</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">BEST TIME</div>
+          <div class="info-val">朝マズメ・夕マズメ</div>
+        </div>
+      </div>
+      <div class="rating">
+        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star dim">★</span>
+      </div>
+      <div class="spot-desc">
+        足場が広く無料で利用できる公共釣り場。春から初夏にかけて小〜中型アジが回遊。サビキ釣りで手軽に楽しめる。駐車場あり。
+      </div>
+    </div>
+
+    <div class="spot-card">
+      <div class="spot-rank">#04</div>
+      <div class="spot-name">貝塚人工島（水間公園側）</div>
+      <div class="spot-area">KAIZUKA · 貝塚市</div>
+      <div class="spot-tags">
+        <span class="tag tag-easy">入門向け</span>
+        <span class="tag tag-night">夜釣り◎</span>
+      </div>
+      <div class="spot-info">
+        <div class="info-item">
+          <div class="info-label">ACCESS</div>
+          <div class="info-val">南海 貝塚駅 車10分</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">FEE</div>
+          <div class="info-val">無料（駐車場有料）</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">DEPTH</div>
+          <div class="info-val">3〜10m</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">BEST TIME</div>
+          <div class="info-val">夜〜早朝</div>
+        </div>
+      </div>
+      <div class="rating">
+        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star dim">★</span>
+      </div>
+      <div class="spot-desc">
+        常夜灯が点灯しており、夜のアジングに定評がある。尺アジ（30cm）も十分狙える水深。テトラ帯と護岸で多様な釣りスタイルに対応。
+      </div>
+    </div>
+
+    <div class="spot-card">
+      <div class="spot-rank">#05</div>
+      <div class="spot-name">阪南港（尾崎漁港周辺）</div>
+      <div class="spot-area">HANNAN · 阪南市</div>
+      <div class="spot-tags">
+        <span class="tag tag-hard">上級向け</span>
+        <span class="tag tag-night">夜釣り◎</span>
+      </div>
+      <div class="spot-info">
+        <div class="info-item">
+          <div class="info-label">ACCESS</div>
+          <div class="info-val">南海 尾崎駅 徒歩15分</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">FEE</div>
+          <div class="info-val">無料</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">DEPTH</div>
+          <div class="info-val">5〜12m</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">BEST TIME</div>
+          <div class="info-val">秋〜冬（大型狙い）</div>
+        </div>
+      </div>
+      <div class="rating">
+        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star dim">★</span><span class="star dim">★</span>
+      </div>
+      <div class="spot-desc">
+        地元漁師も通うマニアックな穴場。秋冬に大型アジが回遊し、35cm超の実績もある。ルアーアジングの上級者に人気。漁港ルールを守って利用すること。
+      </div>
+    </div>
+
+    <div class="spot-card">
+      <div class="spot-rank">#06</div>
+      <div class="spot-name">淀川河口（伝法水門周辺）</div>
+      <div class="spot-area">YODOGAWA · 此花区</div>
+      <div class="spot-tags">
+        <span class="tag tag-easy">入門向け</span>
+        <span class="tag tag-family">ファミリー</span>
+      </div>
+      <div class="spot-info">
+        <div class="info-item">
+          <div class="info-label">ACCESS</div>
+          <div class="info-val">阪神 伝法駅 徒歩10分</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">FEE</div>
+          <div class="info-val">無料</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">DEPTH</div>
+          <div class="info-val">2〜5m</div>
+        </div>
+        <div class="info-item">
+          <div class="info-label">BEST TIME</div>
+          <div class="info-val">春〜初夏（小アジ）</div>
+        </div>
+      </div>
+      <div class="rating">
+        <span class="star">★</span><span class="star">★</span><span class="star">★</span><span class="star dim">★</span><span class="star dim">★</span>
+      </div>
+      <div class="spot-desc">
+        大阪市内からアクセスしやすい河口部。春〜初夏は小型アジが群れで回遊し、子連れのサビキ釣りに最適。釣り禁止エリアに注意。
+      </div>
+    </div>
+
+  </div>
+
+  <!-- 季節カレンダー -->
+  <div class="section-title">▶ SEASON CALENDAR — 月別アジ釣り情報</div>
+  <table class="season-table">
+    <thead>
+      <tr>
+        <th>月</th>
+        <th>釣果</th>
+        <th>サイズ</th>
+        <th>おすすめ仕掛け</th>
+        <th>備考</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>1〜2月</td><td>—</td><td>—</td><td>—</td><td>オフシーズン</td></tr>
+      <tr><td>3月</td><td>△</td><td>豆アジ</td><td>サビキ（小針）</td><td>水温上昇待ち</td></tr>
+      <tr><td class="good">4月</td><td class="good">○</td><td class="good">15〜20cm</td><td class="good">サビキ・ウキ釣り</td><td class="good">春アジ本格始動</td></tr>
+      <tr><td class="peak">5〜6月</td><td class="peak">◎◎</td><td class="peak">20〜28cm</td><td class="peak">サビキ・アジング</td><td class="peak">最盛期・数釣り◎</td></tr>
+      <tr><td>7〜8月</td><td>△</td><td>豆〜小アジ</td><td>サビキ</td><td>夏枯れ・夜釣り中心</td></tr>
+      <tr><td class="good">9〜10月</td><td class="good">◎</td><td class="good">25〜32cm</td><td class="good">アジング・ウキ釣り</td><td class="good">秋アジ大型狙い</td></tr>
+      <tr><td class="peak">11月</td><td class="peak">◎◎</td><td class="peak">28〜35cm+</td><td class="peak">アジング・泳がせ</td><td class="peak">尺アジのシーズン</td></tr>
+      <tr><td>12月</td><td>○</td><td>25〜30cm</td><td>アジング</td><td>水温低下で深場へ</td></tr>
+    </tbody>
+  </table>
+
+  <!-- 釣り方ヒント -->
+  <div class="section-title">▶ FISHING TIPS — 仕掛け・テクニック</div>
+  <div class="tips-grid">
+    <div class="tip-card">
+      <div class="tip-icon">🎣</div>
+      <div class="tip-title">サビキ釣り（入門）</div>
+      <div class="tip-body">
+        <strong>針サイズ：4〜6号</strong>、アミエビコマセを使用。仕掛けを底まで落として少しずつ上げながら釣る。ファミリーにも最適。アジが回遊している棚を探すのが釣果アップの鍵。
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">💡</div>
+      <div class="tip-title">アジング（ルアー）</div>
+      <div class="tip-body">
+        <strong>ジグヘッド：1〜2g</strong>、ワームは<strong>2〜3インチ</strong>のクリア系・グロー系が有効。常夜灯周りの明暗境界を狙う。リトリーブはゆっくり一定が基本。
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">🌙</div>
+      <div class="tip-title">夜釣りのコツ</div>
+      <div class="tip-body">
+        アジは夜行性で<strong>常夜灯周り</strong>に集まるプランクトンを捕食。ヘッドライトは赤色モードを使い、水面を照らさないよう注意。<strong>夕マズメから2時間</strong>がゴールデンタイム。
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">🌊</div>
+      <div class="tip-title">潮と時間帯</div>
+      <div class="tip-body">
+        <strong>中潮〜大潮</strong>の潮が動く時間帯が釣果UP。上げ3分・下げ3分（潮が動き始めて少し経ったタイミング）を狙うべし。潮汐表アプリを活用しよう。
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">📦</div>
+      <div class="tip-title">必須アイテム</div>
+      <div class="tip-body">
+        <strong>クーラーボックス</strong>（釣ったアジは氷締めで鮮度保持）、<strong>ライフジャケット</strong>、虫除けスプレー。サビキ釣りはコマセバケツとコマセシャクがあると便利。
+      </div>
+    </div>
+    <div class="tip-card">
+      <div class="tip-icon">🍳</div>
+      <div class="tip-title">食べ方・下処理</div>
+      <div class="tip-body">
+        釣ったアジは<strong>アジフライ・南蛮漬け・刺身</strong>に。締めたらすぐにエラと内臓を取り除くと臭みがない。20cm以上なら刺身・なめろうも絶品。
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  大阪アジ釣りスポットガイド · 釣行の際は各施設のルールを遵守し、ゴミは持ち帰りましょう。
+</footer>
+
+</body>
+</html>
