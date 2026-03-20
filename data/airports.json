@@ -1,0 +1,140 @@
+{
+  "airports": [
+    {
+      "icao": "RJAA",
+      "iata": "NRT",
+      "name": "成田国際空港",
+      "name_en": "Narita International Airport",
+      "location": "千葉県成田市",
+      "feeds": [
+        {
+          "name": "NRT アプローチ/デパーチャー",
+          "freq": "119.7 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJAA"
+        },
+        {
+          "name": "NRT タワー/グランド",
+          "freq": "118.2 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJAA"
+        }
+      ]
+    },
+    {
+      "icao": "RJTT",
+      "iata": "HND",
+      "name": "東京国際空港（羽田）",
+      "name_en": "Tokyo Haneda Airport",
+      "location": "東京都大田区",
+      "feeds": [
+        {
+          "name": "HND アプローチ",
+          "freq": "119.1 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJTT"
+        },
+        {
+          "name": "HND タワー/グランド",
+          "freq": "118.1 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJTT"
+        }
+      ]
+    },
+    {
+      "icao": "RJBB",
+      "iata": "KIX",
+      "name": "関西国際空港",
+      "name_en": "Kansai International Airport",
+      "location": "大阪府泉佐野市",
+      "feeds": [
+        {
+          "name": "KIX アプローチ/デパーチャー",
+          "freq": "124.7 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJBB"
+        }
+      ]
+    },
+    {
+      "icao": "RJOO",
+      "iata": "ITM",
+      "name": "大阪国際空港（伊丹）",
+      "name_en": "Osaka Itami Airport",
+      "location": "大阪府豊中市",
+      "feeds": [
+        {
+          "name": "ITM アプローチ/タワー",
+          "freq": "119.7 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJOO"
+        }
+      ]
+    },
+    {
+      "icao": "RJFF",
+      "iata": "FUK",
+      "name": "福岡空港",
+      "name_en": "Fukuoka Airport",
+      "location": "福岡県福岡市",
+      "feeds": [
+        {
+          "name": "FUK アプローチ",
+          "freq": "119.9 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJFF"
+        }
+      ]
+    },
+    {
+      "icao": "RJCC",
+      "iata": "CTS",
+      "name": "新千歳空港",
+      "name_en": "New Chitose Airport",
+      "location": "北海道千歳市",
+      "feeds": [
+        {
+          "name": "CTS アプローチ",
+          "freq": "119.3 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJCC"
+        }
+      ]
+    },
+    {
+      "icao": "ROAH",
+      "iata": "OKA",
+      "name": "那覇空港",
+      "name_en": "Naha Airport",
+      "location": "沖縄県那覇市",
+      "feeds": [
+        {
+          "name": "OKA アプローチ",
+          "freq": "119.1 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=ROAH"
+        }
+      ]
+    },
+    {
+      "icao": "RJSN",
+      "iata": "KIJ",
+      "name": "新潟空港",
+      "name_en": "Niigata Airport",
+      "location": "新潟県新潟市",
+      "feeds": [
+        {
+          "name": "KIJ アプローチ/タワー",
+          "freq": "119.5 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJSN"
+        }
+      ]
+    },
+    {
+      "icao": "RJGG",
+      "iata": "NGO",
+      "name": "中部国際空港（セントレア）",
+      "name_en": "Chubu Centrair International Airport",
+      "location": "愛知県常滑市",
+      "feeds": [
+        {
+          "name": "NGO アプローチ",
+          "freq": "119.5 MHz",
+          "liveatc_url": "https://www.liveatc.net/search/?icao=RJGG"
+        }
+      ]
+    }
+  ]
+}

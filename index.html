@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="日本の管制塔と飛行機のやりとりを聴ける音声まとめサイト" />
+  <title>日本ATC音声まとめ</title>
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div>
+      <h1>日本ATC音声まとめ</h1>
+    </div>
+    <span class="tagline">管制塔と飛行機のやりとりを聴こう</span>
+  </header>
+
+  <!-- Tab Nav -->
+  <nav class="nav-tabs">
+    <div class="nav-tab active" data-tab="live">ライブ配信</div>
+    <div class="nav-tab" data-tab="recordings">録音アーカイブ</div>
+    <div class="nav-tab" data-tab="about">使い方</div>
+  </nav>
+
+  <!-- Main Content -->
+  <main>
+
+    <!-- LIVE section -->
+    <section data-tab="live" class="active">
+      <p class="section-title">日本の主要空港 — LiveATC.net</p>
+
+      <!-- Search -->
+      <div class="search-bar">
+        <span class="search-icon">&#128269;</span>
+        <input
+          type="search"
+          id="airport-search"
+          placeholder="空港名・コードで検索（例: NRT, 成田, Haneda）"
+          autocomplete="off"
+        />
+      </div>
+
+      <!-- Airport Cards Grid -->
+      <div class="airport-grid" id="airport-grid">
+        <div style="color:var(--text-dim);text-align:center;padding:32px">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- RECORDINGS section -->
+    <section data-tab="recordings">
+      <p class="section-title">アップロード済み録音</p>
+      <div class="recordings-list" id="recordings-list">
+        <div style="color:var(--text-dim);text-align:center;padding:32px">
+          <div class="spinner"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ABOUT section -->
+    <section data-tab="about">
+      <p class="section-title">このサイトについて</p>
+
+      <div class="about-card">
+        <h3>ライブ配信の聴き方</h3>
+        <ol>
+          <li>「ライブ配信」タブから空港を選ぶ</li>
+          <li>「LIVE」ボタンをタップして LiveATC.net を開く</li>
+          <li>LiveATC のページでストリームを選んで再生</li>
+        </ol>
+      </div>
+
+      <div class="about-card">
+        <h3>録音のアップロード方法 (Google Colab)</h3>
+        <ol>
+          <li>リポジトリ内の <code>colab/atc_recorder.ipynb</code> を Google Colab で開く</li>
+          <li>GitHub の Personal Access Token（<code>repo</code> スコープ）を設定</li>
+          <li>録音したい空港・周波数・時間を入力して実行</li>
+          <li>自動で LiveATC から録音し GitHub にアップロード</li>
+          <li>Cloudflare Pages が自動デプロイ → このサイトに反映</li>
+        </ol>
+      </div>
+
+      <div class="about-card">
+        <h3>Cloudflare Pages のセットアップ</h3>
+        <ol>
+          <li>Cloudflare Pages でプロジェクトを作成</li>
+          <li>GitHub リポジトリを連携</li>
+          <li>ビルドコマンドは不要（静的サイト）</li>
+          <li>出力ディレクトリを <code>/</code> に設定</li>
+          <li>push するたびに自動デプロイ</li>
+        </ol>
+      </div>
+
+      <div class="about-card">
+        <h3>注意事項</h3>
+        <ul>
+          <li>LiveATC.net の利用規約に従って使用してください</li>
+          <li>録音ファイルは aviation radio の受信記録です</li>
+          <li>個人利用・学習目的のみ</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- Fixed Audio Player Bar -->
+  <div id="player-bar" class="hidden">
+    <div id="now-playing-text">
+      <div id="now-playing-title">-</div>
+      <div id="now-playing-sub">-</div>
+    </div>
+    <audio id="audio-player" controls></audio>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
